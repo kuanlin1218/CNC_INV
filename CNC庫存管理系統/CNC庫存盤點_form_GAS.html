@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>詮栩庫存盤點</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+
+      /*-- 背景顏色，網站:css gradient --*/
+      body{
+        background: linear-gradient(180deg, #00d2ff 0%, #3a47d5 100%);
+      }
+
+      hr {
+        border: 0;
+        border-top: 2px solid #f38e21; 
+      }
+
+      /*-- "container"表單容器 --*/
+      .container { 
+        max-width: 600px; 
+        margin-top: 20px; 
+      }
+
+      /* 表格格式 */
+      table { 
+        width: 100%; 
+        margin-top: 20px; 
+      }
+      /* 表格標題列 */
+      th { 
+        background: rgb(216, 216, 216);
+        text-align: center; 
+        color:rgb(225, 116, 0);
+        font-size:15px; /* 文字大小 */
+      }
+      /* 表格資料列 */
+      td { 
+        text-align: center; 
+        color:rgb(255, 255, 255);
+        font-size:13px; /* 文字大小 */
+      }
+
+      /* h3 */
+      h3 {
+        text-align: center;
+        color:rgb(41, 123, 255);
+        font-weight:600; /*字體粗細100-900*/
+        letter-spacing: 5px; /*文字間距*/
+        font-size:30px; /* 文字大小 */
+        text-shadow: 1px 1px 0 #ffffffb3, -1px -1px 0 #ffffffb3, 1px -1px 0 #ffffffb3, -1px 1px 0 #ffffffb3; 
+      }
+
+      /*-- "label"設定 --*/
+      label{
+          color:rgb(255, 255, 255);
+          letter-spacing: 3px; /*文字間距*/
+      }
+
+      /*-- "btn-success"按鈕設定 --*/
+      .btn-success {
+          width:100%;
+          padding:6px 6px;
+          font-weight:600; /*字體粗細100-900*/
+          letter-spacing: 3px; /*文字間距*/
+          color:rgb(255, 255, 255);
+          font-size:20px; 
+      }
+
+      /*-- 更新結果顯示設定 --*/
+      .update-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb; /*邊框*/
+        padding: 5px 5px;
+        border-radius: 5px; /*邊框圓角*/
+        margin-top: 3px; /*上半部空間*/
+        font-size: 12px;
+        white-space: nowrap; /* 禁止換行 */
+        text-align: center;
+        letter-spacing: 2px; /*文字間距*/
+        height: 30px;
+      }
+      .update-failure {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+        padding: 5px 5px;
+        border-radius: 5px; /*邊框圓角*/
+        margin-top: 3px; /*上半部空間*/
+        font-size: 12px;
+        white-space: nowrap; /* 禁止換行 */
+        text-align: center;
+        letter-spacing: 2px; /*文字間距*/
+        height: 30px;
+      }
+
+
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h3>詮栩CNC庫存盤點系統</h3>
+      <!-- 選單部分 -->
+      <div class="form-group">
+        <label for="category">類別</label>
+        <select id="category" class="form-control" onchange="filterDataByCategory()"></select>
+      </div>
+
+      <div class="form-group">
+        <label for="productName">品名</label>
+        <select id="productName" class="form-control" onchange="filterSpecifications()"></select>
+      </div>
+
+      <div class="form-group">
+        <label for="specification">規格</label>
+        <select id="specification" class="form-control" onchange="filterBrands()"></select>
+      </div>
+
+      <div class="form-group">
+        <label for="brand">廠牌</label>
+        <select id="brand" class="form-control" onchange="displayItemInfo()"></select>
+      </div>
+
+      <div class="form-group">
+        <label>編號</label>
+        <input id="itemID" type="text" class="form-control" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>庫存</label>
+        <input id="currentQuantity" type="text" class="form-control" readonly>
+      </div>
+
+      <div class="form-group">
+        <label for="newQuantity">目前存量</label>
+        <input id="newQuantity" type="number" class="form-control">
+      </div>
+
+      <button onclick="updateQuantity()" class="btn btn-success">更新庫存</button>
+      
+      <hr>
+
+      <!-- <h6>更新結果</h6> -->
+      <div id="updateResult"></div>
+
+      <!-- 顯示篩選後的資料表格 -->
+      <table class="table table-bordered border-primary table-hover table-sm">
+        <thead>
+          <tr>
+            <th>編號</th>
+            <!-- <th>類別</th> -->
+            <th>品名</th>
+            <th>規格</th>
+            <th>廠牌</th>
+            <th>庫存</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryTableBody"></tbody>
+      </table>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+      let inventoryData = [];
+      let filteredData = [];
+
+      function initializeDropdowns(data) {
+        inventoryData = data; // 更新資料集
+        filteredData = data; // 初始時顯示所有資料
+
+        const categories = [...new Set(data.map(item => item.category))];
+        populateDropdown('category', categories);
+        displayAllData(data); // 顯示全部資料
+      }
+
+      function populateDropdown(dropdownId, options) {
+        const dropdown = document.getElementById(dropdownId);
+        dropdown.innerHTML = '<option value="">請選擇</option>';
+        
+        // 排序選項
+        options.sort();
+
+        options.forEach(option => {
+          const opt = document.createElement('option');
+          opt.value = option;
+          opt.textContent = option;
+          dropdown.appendChild(opt);
+        });
+      }
+
+      function filterDataByCategory() {
+        const selectedCategory = document.getElementById("category").value;
+        filteredData = inventoryData.filter(item => item.category === selectedCategory);
+        displayAllData(filteredData);  // 根據類別過濾後顯示資料
+        clearDropdowns(['productName', 'specification', 'brand']);
+        populateDropdown('productName', [...new Set(filteredData.map(item => item.productName))]);
+      }
+
+      function filterSpecifications() {
+        const selectedCategory = document.getElementById("category").value;
+        const selectedProduct = document.getElementById("productName").value;
+        const specifications = [...new Set(filteredData
+          .filter(item => item.category === selectedCategory && item.productName === selectedProduct)
+          .map(item => item.specification))];
+        populateDropdown('specification', specifications);
+        clearDropdowns(['brand']);
+      }
+
+      function filterBrands() {
+        const selectedCategory = document.getElementById("category").value;
+        const selectedProduct = document.getElementById("productName").value;
+        const selectedSpec = document.getElementById("specification").value;
+        const brands = [...new Set(filteredData
+          .filter(item => item.category === selectedCategory && item.productName === selectedProduct && item.specification === selectedSpec)
+          .map(item => item.brand))];
+        populateDropdown('brand', brands);
+      }
+
+      function displayItemInfo() {
+        const selectedCategory = document.getElementById("category").value;
+        const selectedProduct = document.getElementById("productName").value;
+        const selectedSpec = document.getElementById("specification").value;
+        const selectedBrand = document.getElementById("brand").value;
+
+        const item = filteredData.find(
+          item => item.category === selectedCategory &&
+                  item.productName === selectedProduct &&
+                  item.specification === selectedSpec &&
+                  item.brand === selectedBrand
+        );
+        if (item) {
+          document.getElementById("itemID").value = item.id;
+          document.getElementById("currentQuantity").value = item.quantity;
+        }
+      }
+
+      function clearDropdowns(dropdownIds) {
+        dropdownIds.forEach(id => document.getElementById(id).innerHTML = '<option value="">請選擇</option>');
+      }
+
+      function updateQuantity() {
+        const itemID = document.getElementById("itemID").value;
+        const newQuantity = document.getElementById("newQuantity").value;
+
+        if (isNaN(newQuantity) || newQuantity.trim() === "") {
+          alert("請輸入有效的庫存數量");
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(result => {
+            displayUpdatedResult(result);
+            if (result.success) {
+              // 僅更新篩選條件相關的資料
+              const updatedItem = result.updatedRow;
+              inventoryData = inventoryData.map(item =>
+                item.id === updatedItem[0] ? { ...item, quantity: updatedItem[5] } : item
+              );
+              filteredData = filteredData.map(item =>
+                item.id === updatedItem[0] ? { ...item, quantity: updatedItem[5] } : item
+              );
+              updateTableRow(updatedItem[0], updatedItem[5]);
+            }
+          })
+          .updateStock(itemID, newQuantity);
+      }
+
+      // 顯示更新結果
+      function displayUpdatedResult(result) {
+        const updateResultDiv = document.getElementById("updateResult");
+        if (result.success) {
+          const updatedRow = result.updatedRow;
+          updateResultDiv.innerHTML = `
+            <div class="update-success">
+              <p>
+                更新成功！
+                &nbsp;
+                編號：${updatedRow[0]}
+                &nbsp;
+                規格：${updatedRow[3]}
+                &nbsp;
+                更新數量：${updatedRow[5]}
+              </p>
+            </div>
+          `;
+        } else {
+          updateResultDiv.innerHTML = `
+            <div class="update-failure">
+              <p>
+                更新失敗：${result.message}
+              </p>
+            </div>`;
+        }
+      }
+
+      function displayAllData(data) {
+      const tableBody = document.getElementById("inventoryTableBody");
+      tableBody.innerHTML = ""; // 清空表格內容
+
+      data.forEach(item => {
+        const row = `<tr>
+          <td>${item.id}</td>
+          
+          <td>${item.productName}</td>
+          <td>${item.specification}</td>
+          <td>${item.brand}</td>
+          <td>${item.quantity}</td>
+        </tr>`;
+        tableBody.innerHTML += row;
+      });
+    }
+          // <td>${item.category}</td> //類別
+
+
+      function updateTableRow(itemID, newQuantity) {
+      const tableBody = document.getElementById("inventoryTableBody");
+      const rows = tableBody.getElementsByTagName("tr");
+
+      Array.from(rows).forEach(row => {
+        const firstCell = row.getElementsByTagName("td")[0]; // 第一欄為編號
+        if (firstCell && firstCell.textContent === itemID) {
+          row.cells[5].textContent = newQuantity; // 更新庫存數量欄位
+        }
+      });
+    }
+
+      // 初始化頁面
+      google.script.run.withSuccessHandler(initializeDropdowns).fetchData();
+    </script>
+  </body>
+</html>
