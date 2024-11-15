@@ -1,5 +1,9 @@
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile('index');
+  //return HtmlService.createHtmlOutputFromFile('index');
+  var html = HtmlService.createTemplateFromFile("index");
+  var check = html.evaluate();
+  var show = check.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return show;
 }
 
 // 抓取下拉式選單與顯示所需的資料

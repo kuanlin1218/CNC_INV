@@ -67,19 +67,23 @@
           font-size:20px; 
       }
 
+      p {
+        margin-bottom: 1px; /* 您可以根據需要調整這個數值 */
+      }
+
       /*-- 更新結果顯示設定 --*/
       .update-success {
         background-color: #d4edda;
         color: #155724;
         border: 1px solid #c3e6cb; /*邊框*/
-        padding: 5px 5px;
+        padding: 2px 2px;
         border-radius: 5px; /*邊框圓角*/
         margin-top: 3px; /*上半部空間*/
         font-size: 12px;
-        white-space: nowrap; /* 禁止換行 */
+        /* white-space: nowrap; 禁止換行 */
         text-align: center;
         letter-spacing: 2px; /*文字間距*/
-        height: 30px;
+        height: 85px;
       }
       .update-failure {
         background-color: #f8d7da;
@@ -89,7 +93,7 @@
         border-radius: 5px; /*邊框圓角*/
         margin-top: 3px; /*上半部空間*/
         font-size: 12px;
-        white-space: nowrap; /* 禁止換行 */
+        /* white-space: nowrap; 禁止換行 */
         text-align: center;
         letter-spacing: 2px; /*文字間距*/
         height: 30px;
@@ -253,7 +257,7 @@
           .withSuccessHandler(result => {
             displayUpdatedResult(result);
             if (result.success) {
-              // 僅更新篩選條件相關的資料
+              // 更新 inventoryData 和 filteredData
               const updatedItem = result.updatedRow;
               inventoryData = inventoryData.map(item =>
                 item.id === updatedItem[0] ? { ...item, quantity: updatedItem[5] } : item
@@ -261,11 +265,17 @@
               filteredData = filteredData.map(item =>
                 item.id === updatedItem[0] ? { ...item, quantity: updatedItem[5] } : item
               );
+              
+              // 更新表格顯示
               updateTableRow(updatedItem[0], updatedItem[5]);
+
+              // 可選：重新顯示所有資料，或根據篩選條件更新
+              displayAllData(filteredData);  // 重新顯示過濾後的資料
             }
           })
-          .updateStock(itemID, newQuantity);
+          .updateStock(itemID, newQuantity);  // 假設 updateStock 會更新庫存並返回新的資料
       }
+
 
       // 顯示更新結果
       function displayUpdatedResult(result) {
@@ -274,15 +284,15 @@
           const updatedRow = result.updatedRow;
           updateResultDiv.innerHTML = `
             <div class="update-success">
-              <p>
-                更新成功！
-                &nbsp;
-                編號：${updatedRow[0]}
-                &nbsp;
-                規格：${updatedRow[3]}
-                &nbsp;
-                更新數量：${updatedRow[5]}
-              </p>
+
+                <p>更新成功！<p>
+
+                <p>編號：${updatedRow[0]}<p>
+
+                <p>規格：${updatedRow[3]}<p>
+
+                <p>更新數量：${updatedRow[5]}<p>
+
             </div>
           `;
         } else {
@@ -296,35 +306,36 @@
       }
 
       function displayAllData(data) {
-      const tableBody = document.getElementById("inventoryTableBody");
-      tableBody.innerHTML = ""; // 清空表格內容
+        const tableBody = document.getElementById("inventoryTableBody");
+        tableBody.innerHTML = ""; // 清空表格內容
 
-      data.forEach(item => {
-        const row = `<tr>
-          <td>${item.id}</td>
-          
-          <td>${item.productName}</td>
-          <td>${item.specification}</td>
-          <td>${item.brand}</td>
-          <td>${item.quantity}</td>
-        </tr>`;
-        tableBody.innerHTML += row;
-      });
-    }
+        data.forEach(item => {
+          const row = `<tr>
+            <td>${item.id}</td>
+            <td>${item.productName}</td>
+            <td>${item.specification}</td>
+            <td>${item.brand}</td>
+            <td>${item.quantity}</td>
+          </tr>`;
+          tableBody.innerHTML += row;
+        });
+      }
+
           // <td>${item.category}</td> //類別
 
 
       function updateTableRow(itemID, newQuantity) {
-      const tableBody = document.getElementById("inventoryTableBody");
-      const rows = tableBody.getElementsByTagName("tr");
+        const tableBody = document.getElementById("inventoryTableBody");
+        const rows = tableBody.getElementsByTagName("tr");
 
-      Array.from(rows).forEach(row => {
-        const firstCell = row.getElementsByTagName("td")[0]; // 第一欄為編號
-        if (firstCell && firstCell.textContent === itemID) {
-          row.cells[5].textContent = newQuantity; // 更新庫存數量欄位
-        }
-      });
-    }
+        Array.from(rows).forEach(row => {
+          const firstCell = row.getElementsByTagName("td")[0]; // 第一欄為編號
+          if (firstCell && firstCell.textContent === itemID) {
+            row.cells[4].textContent = newQuantity; // 更新庫存數量欄位（第5欄）
+          }
+        });
+      }
+
 
       // 初始化頁面
       google.script.run.withSuccessHandler(initializeDropdowns).fetchData();
